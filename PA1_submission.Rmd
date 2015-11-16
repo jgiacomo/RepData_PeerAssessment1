@@ -52,14 +52,15 @@ First, a look at the total number of steps per day:
     spd <- fitData %>% group_by(date) %>% summarize(totalSteps = sum(steps))
     spdHist <- ggplot(spd, aes(x=totalSteps)) +
         geom_histogram(fill="white", color="black", binwidth=1000) +
-        labs(x="Total Steps per Day", y="Frequency", title="Histogram of total steps taken")
+        labs(x="Total Steps per Day", y="Frequency",
+             title="Histogram of total steps taken")
     print(spdHist)
     
-    meanSteps <- mean(spd$totalSteps, na.rm = TRUE)
-    medianSteps <- median(spd$totalSteps, na.rm = TRUE)
+    meanSteps <- as.integer(round(mean(spd$totalSteps, na.rm = TRUE),0))
+    medianSteps <- as.integer(round(median(spd$totalSteps, na.rm = TRUE),0))
 ```
 
-The mean number of steps taken per day is `r as.integer(meanSteps)`
+The mean number of steps taken per day is `r meanSteps`
 and the median is `r medianSteps`.
 
 ## What is the average daily activity pattern?
@@ -94,21 +95,81 @@ should be explored.
 
 ```{r missingData, echo=TRUE}
     numMissing <- nrow(fitData[is.na(fitData$steps),])
-    numMisPerc <- numMissing / nrow(fitData)
+    numMisPerc <- numMissing / nrow(fitData) * 100
 ```
 
 There are `r numMissing` missing step data, which is about
 `r round(numMisPerc,0)`% of the data. The missing data will be imputed by the 
-average (by median[^1]) number of steps for that time interval over all days.
+average (by median) number of steps for that time interval over all days.
 
 ```{r imputeSteps, echo=TRUE}
     misData <- fitData %>% filter(is.na(steps))
     misData <- left_join(misData, ada)
-    
+    misData <- misData %>% select(-steps)
+    impData <- left_join(fitData, misData, by=c("date","interval"))
+    for(i in 1:nrow(impData)){
+        if(is.na(impData[i,]$steps)) {
+            impData[i,]$steps <- impData[i,]$medSteps
+        }
+    }
+    impData <- select(impData, -medSteps)
 ```
+
+Now that the missing data has been imputed, the total number of steps taken each
+day can be calculated and compared to the data with missing values.
+
+```{r impTotalStepsHist}
+    impspd <- impData %>% group_by(date) %>% summarize(totalSteps = sum(steps))
+    impspdHist <- ggplot(impspd, aes(x=totalSteps)) +
+        geom_histogram(fill="white", color="black", binwidth=1000) +
+        labs(x="Total Steps per Day", y="Frequency",
+             title="Histogram of total steps taken with missing values imputed")
+    print(impspdHist)
+    
+    impMeanSteps <- as.integer(round(mean(impspd$totalSteps, na.rm = TRUE),0))
+    impMedianSteps <- as.integer(round(
+                                 median(impspd$totalSteps, na.rm = TRUE),0)
+                                 )
+```
+
+Now compare the mean and median with missing data and with imputed data:
+
+Statistic | Missing Data    | Imputed Data
+--------- | --------------- | ------------------
+Mean      | `r meanSteps`   | `r impMeanSteps`
+Median    | `r medianSteps` | `r impMedianSteps`
+
+From these results it appears that there is a significant change in the
+averages when the missing data is imputed. This suggests that the data set is
+not robust and the missing data should be filled in with real data or the
+observations with missing data should be removed from the data set.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
+A factor variable is created to indicate whether the data is from a weekday or a
+weekend. Then, the data are plotted to compare between the weekdays and
+weekends.
+
+```{r dayOfWeek}
+    impData$day <- NA
+    impData[grepl('Sat|Sun', weekdays(as.Date(impData$date))),]$day <-
+        "weekend"
+    impData[is.na(impData$day),]$day <- "weekday"
+    impData$day <- as.factor(impData$day)
+    
+    dowDF <- impData %>% group_by(day, interval) %>%
+        summarize(medSteps = median(steps))
+    
+    dowDFts <- ggplot(dowDF, aes(x=interval, y=medSteps)) + geom_line() +
+        labs(x="Interval", y="Median number of steps",
+             title="Average Daily Activity")
+    facetPlot <- dowDFts + facet_grid(day ~ .)
+    print(facetPlot)
+```
+
+From the plots it is clear that there is much more activity during the middle of
+the day on the weekends than on the weekdays. This makes sense if the subject
+works at an office job during the weekdays.
 
 [^1]: The average is computed as the median because this is less prone to
 outliers than the mean.
