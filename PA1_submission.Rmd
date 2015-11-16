@@ -1,0 +1,114 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+author: "Jason Giacomo"
+output: 
+  html_document:
+    keep_md: true
+---
+
+
+## Loading and preprocessing the data
+
+Begin by loading the data into a data frame (these commands assume the data has
+been downloaded and extracted into the `data` directory, if not download the
+file
+[here](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip). The
+structure of the data is a csv file with 3 variables: steps, date, and interval
+which are read into the data frame as integer, character, and 
+integer types respectively.
+
+```{r loadLibraries, echo=TRUE, message=FALSE}
+    # Loade libraries for use in this document.
+    library(readr)
+    library(dplyr)
+    library(ggplot2)
+```
+```{r loadData, echo=TRUE}
+    fitData <- read_csv("data/activity.csv", col_types = "ici")
+    str(fitData)
+```
+
+Each data row is the number of steps registered by the device on the specified
+date during the specified 5 minute interval of the day.
+
+```{r stepsNA, echo=TRUE}
+    summary(fitData$steps)
+    range(fitData$date)
+    range(fitData$interval)
+```
+
+A quick look at the data indicates there are missing data for the number of
+steps and the data span the period between `r min(fitData$date)` and 
+`r max(fitData$date)`. The interval variable is a little strange in that it
+records the minutes in the ones and tens digits and the hour in the hundreds and
+thousands digits. However, this should not be a problem since this structure
+keeps them properly sorted from earliest to latest.
+
+## What is the mean total number of steps taken per day?
+
+First, a look at the total number of steps per day:
+
+```{r totalStepsHist}
+    spd <- fitData %>% group_by(date) %>% summarize(totalSteps = sum(steps))
+    spdHist <- ggplot(spd, aes(x=totalSteps)) +
+        geom_histogram(fill="white", color="black", binwidth=1000) +
+        labs(x="Total Steps per Day", y="Frequency", title="Histogram of total steps taken")
+    print(spdHist)
+    
+    meanSteps <- mean(spd$totalSteps, na.rm = TRUE)
+    medianSteps <- median(spd$totalSteps, na.rm = TRUE)
+```
+
+The mean number of steps taken per day is `r as.integer(meanSteps)`
+and the median is `r medianSteps`.
+
+## What is the average daily activity pattern?
+
+The average daily activity will provide some information about the time of day
+when the subject is most active. To look at this the median[^1] steps over each
+time interval is plotted.
+
+```{r adaPlot, echo=TRUE}
+    ada <- fitData %>% group_by(interval) %>%
+        summarize(medSteps = median(steps, na.rm=TRUE))
+    
+    adaTimeseries <- ggplot(ada, aes(x=interval, y=medSteps)) +
+        geom_line() + labs(x="Interval", y="Median number of steps", 
+                           title="Average Daily Activity")
+    print(adaTimeseries)
+    maxSteps <- max(ada$medSteps)
+    maxInterv <- ada[which(ada$medSteps==maxSteps),]$interval
+```
+
+From the plot the maximum average number of steps taken, `r maxSteps`, occurs
+during the `r maxInterv` 5-minute interval.
+
+Not surprisingly the steps tend to peak just before the work day starts and just
+after the workday ends with a small peak around lunch time.
+
+## Imputing missing values
+
+This data set has a number of missing values for the number of steps. While the
+reason for these missing values is not obvious, the impact of the missing data
+should be explored.
+
+```{r missingData, echo=TRUE}
+    numMissing <- nrow(fitData[is.na(fitData$steps),])
+    numMisPerc <- numMissing / nrow(fitData)
+```
+
+There are `r numMissing` missing step data, which is about
+`r round(numMisPerc,0)`% of the data. The missing data will be imputed by the 
+average (by median[^1]) number of steps for that time interval over all days.
+
+```{r imputeSteps, echo=TRUE}
+    misData <- fitData %>% filter(is.na(steps))
+    misData <- left_join(misData, ada)
+    
+```
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+
+[^1]: The average is computed as the median because this is less prone to
+outliers than the mean.
