@@ -71,7 +71,8 @@ time interval is plotted.
 
 ```{r adaPlot, echo=TRUE}
     ada <- fitData %>% group_by(interval) %>%
-        summarize(avgSteps = mean(steps, na.rm=TRUE))
+        summarize(avgSteps = mean(steps, na.rm=TRUE),
+                  sdSteps = sd(steps, na.rm=TRUE))
     
     adaTimeseries <- ggplot(ada, aes(x=interval, y=avgSteps)) +
         geom_line() + labs(x="Interval", y="Mean number of steps", 
@@ -99,20 +100,21 @@ should be explored.
 ```
 
 There are `r numMissing` missing step data, which is about
-`r round(numMisPerc,0)`% of the data. The missing data will be imputed by the 
-average number of steps for that time interval over all days.
+`r round(numMisPerc,0)`% of the data. Assuming the number of steps in each time interval is normally distributed accross all days, the missing data will be imputed by randomly drawing from the time interval's distribution. This is accomplished by using `rnorm()` and setting the mean and standard deviation appropriately for the time interval. Also, make sure not to allow negative steps.
 
 ```{r imputeSteps, echo=TRUE}
     misData <- fitData %>% filter(is.na(steps))
     misData <- left_join(misData, ada)
     misData <- misData %>% select(-steps)
     impData <- left_join(fitData, misData, by=c("date","interval"))
+    set.seed(5678)
     for(i in 1:nrow(impData)){
         if(is.na(impData[i,]$steps)) {
-            impData[i,]$steps <- impData[i,]$avgSteps
+            impData[i,]$steps <- rnorm(1, mean=impData[i,]$avgSteps,
+                                       sd=impData[i,]$sdSteps)
         }
+        if(impData[i,]$steps < 0) {impData[i,]$steps <- 0}
     }
-    impData <- select(impData, -avgSteps)
 ```
 
 Now that the missing data has been imputed, the total number of steps taken each
