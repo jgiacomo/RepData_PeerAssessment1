@@ -18,7 +18,7 @@ which are read into the data frame as integer, character, and
 integer types respectively.
 
 ```{r loadLibraries, echo=TRUE, message=FALSE}
-    # Loade libraries for use in this document.
+    # Load libraries for use in this document.
     library(readr)
     library(dplyr)
     library(ggplot2)
@@ -66,19 +66,19 @@ and the median is `r medianSteps`.
 ## What is the average daily activity pattern?
 
 The average daily activity will provide some information about the time of day
-when the subject is most active. To look at this the median[^1] steps over each
+when the subject is most active. To look at this the mean steps over each
 time interval is plotted.
 
 ```{r adaPlot, echo=TRUE}
     ada <- fitData %>% group_by(interval) %>%
-        summarize(medSteps = median(steps, na.rm=TRUE))
+        summarize(avgSteps = mean(steps, na.rm=TRUE))
     
-    adaTimeseries <- ggplot(ada, aes(x=interval, y=medSteps)) +
-        geom_line() + labs(x="Interval", y="Median number of steps", 
+    adaTimeseries <- ggplot(ada, aes(x=interval, y=avgSteps)) +
+        geom_line() + labs(x="Interval", y="Mean number of steps", 
                            title="Average Daily Activity")
     print(adaTimeseries)
-    maxSteps <- max(ada$medSteps)
-    maxInterv <- ada[which(ada$medSteps==maxSteps),]$interval
+    maxSteps <- max(ada$avgSteps)
+    maxInterv <- ada[which(ada$avgSteps==maxSteps),]$interval
 ```
 
 From the plot the maximum average number of steps taken, `r maxSteps`, occurs
@@ -100,7 +100,7 @@ should be explored.
 
 There are `r numMissing` missing step data, which is about
 `r round(numMisPerc,0)`% of the data. The missing data will be imputed by the 
-average (by median) number of steps for that time interval over all days.
+average number of steps for that time interval over all days.
 
 ```{r imputeSteps, echo=TRUE}
     misData <- fitData %>% filter(is.na(steps))
@@ -109,10 +109,10 @@ average (by median) number of steps for that time interval over all days.
     impData <- left_join(fitData, misData, by=c("date","interval"))
     for(i in 1:nrow(impData)){
         if(is.na(impData[i,]$steps)) {
-            impData[i,]$steps <- impData[i,]$medSteps
+            impData[i,]$steps <- impData[i,]$avgSteps
         }
     }
-    impData <- select(impData, -medSteps)
+    impData <- select(impData, -avgSteps)
 ```
 
 Now that the missing data has been imputed, the total number of steps taken each
@@ -158,10 +158,10 @@ weekends.
     impData$day <- as.factor(impData$day)
     
     dowDF <- impData %>% group_by(day, interval) %>%
-        summarize(medSteps = median(steps))
+        summarize(avgSteps = mean(steps))
     
-    dowDFts <- ggplot(dowDF, aes(x=interval, y=medSteps)) + geom_line() +
-        labs(x="Interval", y="Median number of steps",
+    dowDFts <- ggplot(dowDF, aes(x=interval, y=avgSteps)) + geom_line() +
+        labs(x="Interval", y="Mean number of steps",
              title="Average Daily Activity")
     facetPlot <- dowDFts + facet_grid(day ~ .)
     print(facetPlot)
@@ -170,6 +170,3 @@ weekends.
 From the plots it is clear that there is much more activity during the middle of
 the day on the weekends than on the weekdays. This makes sense if the subject
 works at an office job during the weekdays.
-
-[^1]: The average is computed as the median because this is less prone to
-outliers than the mean.
