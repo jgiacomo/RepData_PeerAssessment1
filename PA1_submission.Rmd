@@ -169,6 +169,6 @@ weekends.
     print(facetPlot)
 ```
 
-From the plots it is clear that there is much more activity during the middle of
-the day on the weekends than on the weekdays. This makes sense if the subject
-works at an office job during the weekdays.
+From the plots it is clear that activity is more focused during the morning
+hours on the weekdays and the activity is more spread out throughout the day on
+the weekends.
