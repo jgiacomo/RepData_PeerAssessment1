@@ -7,7 +7,7 @@ output:
 ---
 
 
-## Loading and preprocessing the data
+# Loading and preprocessing the data
 
 Begin by loading the data into a data frame (these commands assume the data has
 been downloaded and extracted into the `data` directory, if not download the
@@ -44,11 +44,11 @@ records the minutes in the ones and tens digits and the hour in the hundreds and
 thousands digits. However, this should not be a problem since this structure
 keeps them properly sorted from earliest to latest.
 
-## What is the mean total number of steps taken per day?
+# What is the mean total number of steps taken per day?
 
 First, a look at the total number of steps per day:
 
-```{r totalStepsHist}
+```{r totalStepsHist, echo=TRUE}
     spd <- fitData %>% group_by(date) %>% summarize(totalSteps = sum(steps))
     spdHist <- ggplot(spd, aes(x=totalSteps)) +
         geom_histogram(fill="white", color="black", binwidth=1000) +
@@ -63,7 +63,7 @@ First, a look at the total number of steps per day:
 The mean number of steps taken per day is `r meanSteps`
 and the median is `r medianSteps`.
 
-## What is the average daily activity pattern?
+# What is the average daily activity pattern?
 
 The average daily activity will provide some information about the time of day
 when the subject is most active. To look at this the mean steps over each
@@ -88,7 +88,7 @@ during the `r maxInterv` 5-minute interval.
 Not surprisingly the steps tend to peak just before the work day starts and just
 after the workday ends with a small peak around lunch time.
 
-## Imputing missing values
+# Imputing missing values
 
 This data set has a number of missing values for the number of steps. While the
 reason for these missing values is not obvious, the impact of the missing data
@@ -120,7 +120,7 @@ There are `r numMissing` missing step data, which is about
 Now that the missing data has been imputed, the total number of steps taken each
 day can be calculated and compared to the data with missing values.
 
-```{r impTotalStepsHist}
+```{r impTotalStepsHist, echo=TRUE}
     impspd <- impData %>% group_by(date) %>% summarize(totalSteps = sum(steps))
     impspdHist <- ggplot(impspd, aes(x=totalSteps)) +
         geom_histogram(fill="white", color="black", binwidth=1000) +
@@ -146,7 +146,7 @@ averages when the missing data is imputed. This suggests that the data set is
 not robust and the missing data should be filled in with real data or the
 observations with missing data should be removed from the data set.
 
-## Are there differences in activity patterns between weekdays and weekends?
+# Are there differences in activity patterns between weekdays and weekends?
 
 A factor variable is created to indicate whether the data is from a weekday or a
 weekend. Then, the data are plotted to compare between the weekdays and
