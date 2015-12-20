@@ -52,6 +52,10 @@ First, a look at the total number of steps per day:
     spd <- fitData %>% group_by(date) %>% summarize(totalSteps = sum(steps))
     spdHist <- ggplot(spd, aes(x=totalSteps)) +
         geom_histogram(fill="white", color="black", binwidth=1000) +
+        geom_vline(aes(xintercept=mean(spd$totalSteps, na.rm=TRUE),
+                       color="Mean"),
+                   show_guide = TRUE) +
+        scale_colour_manual(name="", values=c(Mean="red")) +
         labs(x="Total Steps per Day", y="Frequency",
              title="Histogram of total steps taken")
     print(spdHist)
