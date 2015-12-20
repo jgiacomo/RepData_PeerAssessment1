@@ -128,6 +128,13 @@ day can be calculated and compared to the data with missing values.
     impspd <- impData %>% group_by(date) %>% summarize(totalSteps = sum(steps))
     impspdHist <- ggplot(impspd, aes(x=totalSteps)) +
         geom_histogram(fill="white", color="black", binwidth=1000) +
+        geom_vline(aes(xintercept=mean(impspd$totalSteps),
+                       color="Mean with Imputed Data"),
+                   show_guide=TRUE) +
+        geom_vline(aes(xintercept=meanSteps, color="Mean with Missing Data"),
+                   show_guide=TRUE) +
+        scale_color_manual(name="", values=c("Mean with Imputed Data"="red",
+                                             "Mean with Missing Data"="blue")) +
         labs(x="Total Steps per Day", y="Frequency",
              title="Histogram of total steps taken with missing values imputed")
     print(impspdHist)
